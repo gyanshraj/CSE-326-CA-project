@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: forgeflow-production-dashboard
+    runtime: python
+    buildCommand: ""
+    startCommand: python server.py
+    plan: starter
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/production.db
+    disk:
+      name: forgeflow-data
+      mountPath: /var/data
+      sizeGB: 1

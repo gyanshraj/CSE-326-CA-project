@@ -1,0 +1,202 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  color: #222;
+  background: #f5f5f5;
+  font: 14px Arial, sans-serif;
+}
+
+header {
+  margin-bottom: 24px;
+}
+
+h1, h2, p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 6px;
+  font-size: 28px;
+}
+
+h2 {
+  margin-bottom: 16px;
+  font-size: 19px;
+}
+
+header p, .message {
+  color: #666;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summary div, .section {
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.summary b, .summary span {
+  display: block;
+}
+
+.summary b {
+  margin-bottom: 5px;
+  font-size: 24px;
+}
+
+.summary span {
+  color: #666;
+  font-size: 12px;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+button {
+  padding: 8px 12px;
+  color: #fff;
+  background: #333;
+  border: 0;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #555;
+}
+
+button.cancel {
+  color: #222;
+  background: #eee;
+}
+
+#orderSearch {
+  width: 240px;
+  margin-bottom: 14px;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #bbb;
+  background: #fff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th, td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e5e5e5;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  color: #666;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.actions button {
+  margin-right: 4px;
+  padding: 5px 8px;
+  color: #222;
+  background: #eee;
+}
+
+.progress {
+  width: 70px;
+  height: 7px;
+  display: inline-block;
+  margin-right: 5px;
+  background: #ddd;
+}
+
+.progress i {
+  display: block;
+  height: 100%;
+  background: #555;
+}
+
+.materials {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.material {
+  padding: 12px;
+  border: 1px solid #ddd;
+}
+
+.material p {
+  margin: 8px 0;
+  color: #666;
+}
+
+dialog {
+  width: 360px;
+  border: 1px solid #aaa;
+}
+
+dialog form label {
+  display: block;
+  margin: 12px 0;
+}
+
+dialog label input, dialog label select {
+  display: block;
+  margin-top: 5px;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.error {
+  color: #a00;
+}
+
+@media (max-width: 700px) {
+  body {
+    padding: 14px;
+  }
+
+  .summary, .materials {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .summary, .materials {
+    grid-template-columns: 1fr;
+  }
+}

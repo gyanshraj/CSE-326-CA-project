@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Production Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Production Tracker</h1>
+    <p>Production orders and material status</p>
+  </header>
+
+  <main>
+    <section class="summary">
+      <div><b id="activeOrders">0</b><span>Active orders</span></div>
+      <div><b id="averageProgress">0%</b><span>Average progress</span></div>
+      <div><b id="delayedOrders">0</b><span>Delayed orders</span></div>
+      <div><b id="readyMaterials">0/0</b><span>Materials ready</span></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>Production orders</h2>
+        <button id="newOrderButton">Add order</button>
+      </div>
+      <input id="orderSearch" type="search" placeholder="Search orders">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Order</th><th>Product</th><th>Quantity</th><th>Machine</th><th>Stage</th><th>Due</th><th>Progress</th><th>Actions</th></tr></thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Material status</h2>
+      <div id="materialsGrid" class="materials"></div>
+    </section>
+    <p id="message" class="message"></p>
+  </main>
+
+  <dialog id="orderDialog">
+    <form id="orderForm">
+      <h2 id="dialogTitle">Add order</h2>
+      <input type="hidden" name="id">
+      <label>Order number<input name="order_number" required></label>
+      <label>Product<input name="product" required></label>
+      <label>Quantity<input name="quantity" type="number" min="1" required></label>
+      <label>Machine<input name="machine" required></label>
+      <label>Worker<input name="worker" required></label>
+      <label>Stage<input name="stage" required></label>
+      <label>Due date<input name="due_date" type="date" required></label>
+      <label>Status<select name="status"><option>On time</option><option>Delayed</option><option>Complete</option></select></label>
+      <label>Progress (%)<input name="progress" type="number" min="0" max="100" required></label>
+      <div class="form-buttons"><button type="button" class="cancel" onclick="orderDialog.close()">Cancel</button><button>Save</button></div>
+      <p id="formError" class="error"></p>
+    </form>
+  </dialog>
+
+  <dialog id="materialDialog">
+    <form id="materialForm">
+      <h2>Edit material</h2>
+      <input type="hidden" name="id">
+      <label>Name<input name="name" required></label>
+      <label>Quantity<input name="quantity" required></label>
+      <label>Status<select name="status"><option>Available</option><option>Low stock</option></select></label>
+      <div class="form-buttons"><button type="button" class="cancel" onclick="materialDialog.close()">Cancel</button><button>Save</button></div>
+      <p id="materialError" class="error"></p>
+    </form>
+  </dialog>
+  <script>
+    const state = { orders: [], materials: [] };
+    const $ = (selector) => document.querySelector(selector);
+
+    async function api(url, options) {
+      const response = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    function text(value) {
+      const element = document.createElement("span");
+      element.textContent = value;
+      return element.innerHTML;
+    }
+
+    function render() {
+      const search = $("#orderSearch").value.toLowerCase();
+      const orders = state.orders.filter((order) =>
+        Object.values(order).join(" ").toLowerCase().includes(search)
+      );
+
+      $("#ordersBody").innerHTML = orders.map((order) => `
+        <tr>
+          <td>${text(order.order_number)}</td>
+          <td>${text(order.product)}</td>
+          <td>${order.quantity}</td>
+          <td>${text(order.machine)}<br><small>${text(order.worker)}</small></td>
+          <td>${text(order.stage)}</td>
+          <td>${text(order.due_date)}</td>
+          <td><span class="progress"><i style="width:${order.progress}%"></i></span>${order.progress}%</td>
+          <td class="actions">
+            <button data-edit="${order.id}">Edit</button>
+            <button data-delete="${order.id}">Delete</button>
+          </td>
+        </tr>
+      `).join("") || "<tr><td colspan='8'>No orders found.</td></tr>";
+
+      $("#activeOrders").textContent = state.orders.filter((order) => order.status !== "Complete").length;
+      $("#delayedOrders").textContent = state.orders.filter((order) => order.status === "Delayed").length;
+      $("#averageProgress").textContent = state.orders.length
+        ? `${Math.round(state.orders.reduce((total, order) => total + order.progress, 0) / state.orders.length)}%`
+        : "0%";
+      $("#readyMaterials").textContent =
+        `${state.materials.filter((material) => material.status === "Available").length}/${state.materials.length}`;
+      $("#materialsGrid").innerHTML = state.materials.map((material) => `
+        <article class="material">
+          <b>${text(material.name)}</b>
+          <p>${text(material.quantity)} · ${text(material.status)}</p>
+          <button data-material="${material.id}">Edit</button>
+        </article>
+      `).join("");
+    }
+
+    async function loadData() {
+      [state.orders, state.materials] = await Promise.all([
+        api("/api/orders"),
+        api("/api/materials"),
+      ]);
+      render();
+    }
+
+    function fillForm(form, item) {
+      Object.entries(item || {}).forEach(([key, value]) => {
+        if (form.elements[key]) form.elements[key].value = value;
+      });
+    }
+
+    $("#newOrderButton").addEventListener("click", () => {
+      $("#orderForm").reset();
+      $("#dialogTitle").textContent = "Add order";
+      $("#orderDialog").showModal();
+    });
+
+    $("#orderSearch").addEventListener("input", render);
+
+    $("#ordersBody").addEventListener("click", async (event) => {
+      const id = Number(event.target.dataset.edit || event.target.dataset.delete);
+      if (event.target.dataset.edit) {
+        const form = $("#orderForm");
+        form.reset();
+        fillForm(form, state.orders.find((order) => order.id === id));
+        $("#dialogTitle").textContent = "Edit order";
+        $("#orderDialog").showModal();
+      }
+      if (event.target.dataset.delete && confirm("Delete this order?")) {
+        await api(`/api/orders/${id}`, { method: "DELETE" });
+        await loadData();
+      }
+    });
+
+    $("#materialsGrid").addEventListener("click", (event) => {
+      const id = Number(event.target.dataset.material);
+      if (!id) return;
+      fillForm($("#materialForm"), state.materials.find((material) => material.id === id));
+      $("#materialDialog").showModal();
+    });
+
+    $("#orderForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.target));
+      const id = data.id;
+      delete data.id;
+      try {
+        await api(id ? `/api/orders/${id}` : "/api/orders", {
+          method: id ? "PUT" : "POST",
+          body: JSON.stringify(data),
+        });
+        $("#orderDialog").close();
+        await loadData();
+      } catch (error) {
+        $("#formError").textContent = error.message;
+      }
+    });
+
+    $("#materialForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.target));
+      const id = data.id;
+      delete data.id;
+      try {
+        await api(`/api/materials/${id}`, { method: "PUT", body: JSON.stringify(data) });
+        $("#materialDialog").close();
+        await loadData();
+      } catch (error) {
+        $("#materialError").textContent = error.message;
+      }
+    });
+
+    loadData().catch((error) => { $("#message").textContent = error.message; });
+  </script>
+</body>
+</html>
